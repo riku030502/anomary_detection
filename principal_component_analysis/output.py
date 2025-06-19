@@ -3,7 +3,6 @@ import cv2
 import numpy as np
 import torch
 import torch.nn as nn
-import torchvision.models as models
 import torchvision.transforms as transforms
 from torchvision.models import wide_resnet50_2, Wide_ResNet50_2_Weights
 import matplotlib.pyplot as plt
@@ -88,32 +87,35 @@ def extract_subspace_bases(pca_models):
 
 
 def compute_anomaly_map_clafic(image, model, mean_vectors, subspace_bases, device):
+    """
+    CLAFIC修正版: 対応する位置の基底のみを使用して異常マップを算出
+    """
+    # 前処理
     img_resized = cv2.resize(image, (224, 224))
     img_rgb = np.stack([img_resized] * 3, axis=-1)
     tensor = transforms.ToTensor()(img_rgb).unsqueeze(0).to(device)
+
+    # 特徴抽出
     with torch.no_grad():
-        feat = model(tensor)[0].cpu().numpy()
+        feat = model(tensor)[0].cpu().numpy()  # shape: (C, H, W)
+
     C, H, W = feat.shape
     anomaly_map = np.zeros((H, W))
+
+    # 各位置の同じ基底を使って再構成誤差を計算
     for i in range(H):
         for j in range(W):
-            f_test_ij = feat[:, i, j]
-            f_best_proj_len = -np.inf
-            f_best_basis = None
-            for (pi, pj), basis in subspace_bases.items():
-                mean = mean_vectors[(pi, pj)]
-                f_centered = f_test_ij - mean
-                proj = basis.T @ f_centered
-                proj_len_sq = np.dot(proj, proj)
-                if proj_len_sq > f_best_proj_len:
-                    f_best_proj_len = proj_len_sq
-                    f_best_basis = basis
-                    best_mean = mean
-            f_centered = f_test_ij - best_mean
-            z = f_best_basis.T @ f_centered
-            f_recon = f_best_basis @ z
-            D_ij = np.linalg.norm(f_centered - f_recon)
-            anomaly_map[i, j] = D_ij
+            f = feat[:, i, j]
+            mean = mean_vectors[(i, j)]
+            basis = subspace_bases[(i, j)]  # shape: C x K
+            f_centered = f - mean
+            # 部分空間への射影
+            z = basis.T @ f_centered
+            f_recon = basis @ z
+            # 誤差を異常スコアとして格納
+            anomaly_map[i, j] = np.linalg.norm(f_centered - f_recon)
+
+    # 正規化とリサイズ
     anomaly_map_resized = cv2.resize(anomaly_map, image.shape[::-1])
     anomaly_map_resized = (anomaly_map_resized - anomaly_map_resized.min()) / (anomaly_map_resized.ptp() + 1e-8)
     return anomaly_map_resized
@@ -134,17 +136,20 @@ def compute_and_plot_roc(anomaly_map, gt_mask, save_path=None):
     plt.figure()
     plt.plot(fpr, tpr, color='darkorange', lw=2, label=f'ROC curve (AUC = {roc_auc:.4f})')
     plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
-    plt.xlim([0.0, 1.0])
-    plt.ylim([0.0, 1.05])
     plt.xlabel('False Positive Rate')
     plt.ylabel('True Positive Rate')
-    plt.title('Receiver Operating Characteristic')
+    plt.title('ROC Curve')
     plt.legend(loc="lower right")
     if save_path:
         plt.savefig(save_path)
         print(f"ROC曲線を保存しました: {save_path}")
     else:
         plt.show()
+
+
+def mask_object_region(image):
+    """背景黒の切り抜き画像からネジ領域マスクを作成"""
+    return (image > 0).astype(np.uint8)
 
 
 def save_result_image(anomaly_map, original_img, save_path):
@@ -191,13 +196,32 @@ def main():
 
         test_img = cv2.imread(test_path, cv2.IMREAD_GRAYSCALE)
         gt_mask = cv2.imread(gt_path, cv2.IMREAD_GRAYSCALE)
-
         if test_img is None or gt_mask is None:
             print(f"[WARNING] 読み込み失敗: {filename}")
             continue
 
+        mask = mask_object_region(test_img)  # ネジ領域マスク
+
         start = time.time()
+                # 異常マップを計算
         anomaly_map = compute_anomaly_map_clafic(test_img, model, mean_vectors, subspace_bases, device)
+        # ネジ領域のみを考慮
+        anomaly_map = anomaly_map * mask
+        # 異常度が高い領域のみを強調（上位5%を閾値としてマスク）
+        non_zero_vals = anomaly_map[mask == 1]
+        if non_zero_vals.size > 0:
+            thresh = np.percentile(non_zero_vals, 95)
+            anomaly_map = np.where(anomaly_map >= thresh, anomaly_map, 0)
+            # 異常度が高い領域のみを強調（上位5%を閾値としてマスク）
+            non_zero_vals = anomaly_map[mask==1]
+            if non_zero_vals.size > 0:
+                thresh = np.percentile(non_zero_vals, 95)
+                anomaly_map = np.where(anomaly_map >= thresh, anomaly_map, 0)
+            else:
+                # ネジ領域がない場合はそのまま
+                pass
+        anomaly_map = anomaly_map * mask  # 背景をゼロに
+
         auroc = compute_auroc(anomaly_map, gt_mask)
         elapsed = time.time() - start
         auroc_scores.append(auroc)
@@ -214,7 +238,6 @@ def main():
         compute_and_plot_roc(last_anomaly_map, last_gt_mask, save_path=os.path.join(result_dir, 'roc_curve.png'))
     else:
         print("[SUMMARY] 有効な画像が処理されませんでした。")
-
 
 if __name__ == '__main__':
     main()
