@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>principal_component_analysis</name>
+  <version>0.0.0</version>
+  <description>TODO: Package description</description>
+  <maintainer email="maemukiriku@gmail.com">tequila</maintainer>
+  <license>TODO: License declaration</license>
+
+  <!-- ★ ここを追加 -->
+  <buildtool_depend>ament_python</buildtool_depend>
+
+  <!-- ★ 実行時依存を追加 -->
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>opencv-python</exec_depend>
+  <exec_depend>torch</exec_depend>
+  <exec_depend>torchvision</exec_depend>
+  <exec_depend>scikit-learn</exec_depend>
+  <exec_depend>matplotlib</exec_depend>
+  <exec_depend>tqdm</exec_depend>
+
+  <test_depend>ament_copyright</test_depend>
+  <test_depend>ament_flake8</test_depend>
+  <test_depend>ament_pep257</test_depend>
+  <test_depend>python3-pytest</test_depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>
