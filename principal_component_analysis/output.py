@@ -162,8 +162,8 @@ def save_result_image(anomaly_map, original_img, save_path):
 def main():
     cwd = os.getcwd()
     normal_folder = os.path.join(cwd, "src", "unity_direction", "data", "aligned")
-    test_folder = os.path.join(cwd, "src", "unity_direction", "data", "test_aligned")
-    gt_folder = os.path.join(cwd, "src", "unity_direction", "data", "gt_aligned")
+    test_folder = os.path.join(cwd, "src", "unity_direction", "data", "test")
+    gt_folder = os.path.join(cwd, "src", "unity_direction", "data", "ground_truth")
     result_dir = os.path.join(cwd, "src", "unity_direction", "result")
     os.makedirs(result_dir, exist_ok=True)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -209,17 +209,17 @@ def main():
         anomaly_map = anomaly_map * mask
         # 異常度が高い領域のみを強調（上位5%を閾値としてマスク）
         non_zero_vals = anomaly_map[mask == 1]
-        if non_zero_vals.size > 0:
-            thresh = np.percentile(non_zero_vals, 95)
-            anomaly_map = np.where(anomaly_map >= thresh, anomaly_map, 0)
-            # 異常度が高い領域のみを強調（上位5%を閾値としてマスク）
-            non_zero_vals = anomaly_map[mask==1]
-            if non_zero_vals.size > 0:
-                thresh = np.percentile(non_zero_vals, 95)
-                anomaly_map = np.where(anomaly_map >= thresh, anomaly_map, 0)
-            else:
-                # ネジ領域がない場合はそのまま
-                pass
+        # if non_zero_vals.size > 0:
+        #     thresh = np.percentile(non_zero_vals, 95)
+        #     anomaly_map = np.where(anomaly_map >= thresh, anomaly_map, 0)
+        #     # 異常度が高い領域のみを強調（上位5%を閾値としてマスク）
+        #     non_zero_vals = anomaly_map[mask==1]
+        #     if non_zero_vals.size > 0:
+        #         thresh = np.percentile(non_zero_vals, 95)
+        #         anomaly_map = np.where(anomaly_map >= thresh, anomaly_map, 0)
+        #     else:
+        #         # ネジ領域がない場合はそのまま
+        #         pass
         anomaly_map = anomaly_map * mask  # 背景をゼロに
 
         auroc = compute_auroc(anomaly_map, gt_mask)
