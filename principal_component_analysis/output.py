@@ -127,6 +127,7 @@ def compute_auroc(anomaly_map, gt_mask):
     return roc_auc_score(gt_binary.flatten(), anomaly_map.flatten())
 
 
+
 def compute_and_plot_roc(anomaly_map, gt_mask, save_path=None):
     gt_mask = cv2.resize(gt_mask, (anomaly_map.shape[1], anomaly_map.shape[0]), interpolation=cv2.INTER_NEAREST)
     gt_binary = (gt_mask > 127).astype(np.uint8).flatten()
@@ -162,8 +163,8 @@ def save_result_image(anomaly_map, original_img, save_path):
 def main():
     cwd = os.getcwd()
     normal_folder = os.path.join(cwd, "src", "unity_direction", "data", "aligned")
-    test_folder = os.path.join(cwd, "src", "unity_direction", "data", "test")
-    gt_folder = os.path.join(cwd, "src", "unity_direction", "data", "ground_truth")
+    test_folder = os.path.join(cwd, "src", "unity_direction", "data", "test_aligned")
+    gt_folder = os.path.join(cwd, "src", "unity_direction", "data", "gt_aligned")
     result_dir = os.path.join(cwd, "src", "unity_direction", "result")
     os.makedirs(result_dir, exist_ok=True)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -206,9 +207,9 @@ def main():
                 # 異常マップを計算
         anomaly_map = compute_anomaly_map_clafic(test_img, model, mean_vectors, subspace_bases, device)
         # ネジ領域のみを考慮
-        anomaly_map = anomaly_map * mask
+        # anomaly_map = anomaly_map * mask
         # 異常度が高い領域のみを強調（上位5%を閾値としてマスク）
-        non_zero_vals = anomaly_map[mask == 1]
+        # non_zero_vals = anomaly_map[mask == 1]
         # if non_zero_vals.size > 0:
         #     thresh = np.percentile(non_zero_vals, 95)
         #     anomaly_map = np.where(anomaly_map >= thresh, anomaly_map, 0)
@@ -220,7 +221,7 @@ def main():
         #     else:
         #         # ネジ領域がない場合はそのまま
         #         pass
-        anomaly_map = anomaly_map * mask  # 背景をゼロに
+        # anomaly_map = anomaly_map * mask  # 背景をゼロに
 
         auroc = compute_auroc(anomaly_map, gt_mask)
         elapsed = time.time() - start
