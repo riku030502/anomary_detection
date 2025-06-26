@@ -25,7 +25,7 @@ def save_features(feature_npz_path="features_by_pos.npz"):
     ).to(device).eval()
 
     transform = T.ToTensor()
-    data_dir = os.path.join("src", "unity_direction", "data", "aligned")
+    data_dir = os.path.join("src", "bg_remover_cpp", "data", "aligned")
     features = {}
 
     for fn in sorted(os.listdir(data_dir)):

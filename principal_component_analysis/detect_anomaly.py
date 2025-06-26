@@ -100,7 +100,7 @@ def process_file(fn, test_dir, gt_dir, out_dir):
 # ===== メイン関数 =====
 def main():
     # 0) ディレクトリ定義
-    data_root = "src/unity_direction/data"
+    data_root = "src/bg_remover_cpp/data"
     test_dir  = os.path.join(data_root, "test_aligned")
     gt_dir    = os.path.join(data_root, "gt_aligned")
     out_dir   = os.path.join(data_root, "result")
