@@ -6,10 +6,10 @@
   <maintainer email="maemukiriku@gmail.com">tequila</maintainer>
   <license>TODO: License declaration</license>
 
-  <!-- ★ ここを追加 -->
+  <!-- build tool -->
   <buildtool_depend>ament_python</buildtool_depend>
 
-  <!-- ★ 実行時依存を追加 -->
+  <!-- Python 実行時依存 -->
   <exec_depend>rclpy</exec_depend>
   <exec_depend>opencv-python</exec_depend>
   <exec_depend>torch</exec_depend>
@@ -17,6 +17,11 @@
   <exec_depend>scikit-learn</exec_depend>
   <exec_depend>matplotlib</exec_depend>
   <exec_depend>tqdm</exec_depend>
+
+  <!-- launch ファイル用に追加 -->
+  <exec_depend>launch</exec_depend>
+  <exec_depend>launch_ros</exec_depend>
+  <exec_depend>ament_index_python</exec_depend>
 
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>
