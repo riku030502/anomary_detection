@@ -30,7 +30,8 @@ def main():
     # 各ノードのフルパス
     bg_node = [os.path.join(bg_pkg, 'lib', 'bg_remover_cpp', 'background_remover_node'), '-t']
     align_node = [os.path.join(bg_pkg, 'lib', 'bg_remover_cpp', 'image_aligner_node'), '-t']
-    detect_node = [os.path.join(bg_pkg, 'lib', 'bg_remover_cpp', 'anomaly_detector_node')]
+    detect_node = ['python3', os.path.join(pca_pkg, 'lib', 'principal_component_analysis', 'detect_anomaly.py')]
+
     # 各処理の時間を計測
     t1 = run_and_measure(bg_node, "背景除去")
     t2 = run_and_measure(align_node, "画像整列")
